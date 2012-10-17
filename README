@@ -1,0 +1,4 @@
+configure: edit constant UINPUT_PATH, KEYBOARD_PATH and MIN_MSEC
+compile: gcc key.c -o key
+
+run as root

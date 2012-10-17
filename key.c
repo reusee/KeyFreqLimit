@@ -6,7 +6,7 @@
 
 #define UINPUT_PATH "/dev/uinput"
 #define KEYBOARD_PATH "/dev/input/by-id/usb-Cypress_Cypress_USB_Keyboard___PS2_Mouse-event-kbd"
-#define MIN_MSEC 30
+#define MIN_MSEC 40
 
 static int constructKeyboard (char *name, struct input_id *id, unsigned long *keymask) {
   int i, fd;
@@ -79,10 +79,12 @@ int main(int argc, char *argv[]) {
   unsigned long time;
   unsigned long press_time[255] = {0};
   while (read(fd, &event, sizeof(event)) == sizeof(event)) {
-    if (event.type == EV_KEY && event.value == 1) {
+    if (event.type == EV_KEY) {
       time  = event.time.tv_sec * 1000 + event.time.tv_usec / 1000;
-      if (time - press_time[event.code] < MIN_MSEC) {
-        continue;
+      if (event.value == 1) {
+        if (time - press_time[event.code] < MIN_MSEC) {
+          continue;
+        }
       }
       press_time[event.code] = time;
     }

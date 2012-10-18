@@ -1,8 +1,10 @@
 #include <fcntl.h>
 #include <linux/uinput.h>
+#include <signal.h>
 #include <stdio.h>
 #include <string.h>
-#include <signal.h>
+#include <syslog.h>
+#include <unistd.h>
 
 #define UINPUT_PATH "/dev/uinput"
 #define KEYBOARD_PATH "/dev/input/by-id/usb-Cypress_Cypress_USB_Keyboard___PS2_Mouse-event-kbd"
@@ -54,6 +56,7 @@ void on_term(int s) {
   ioctl(uinput, UI_DEV_DESTROY);
   close(uinput);
   close(fd);
+  closelog();
 }
 
 int main(int argc, char *argv[]) {
@@ -74,6 +77,7 @@ int main(int argc, char *argv[]) {
   if (uinput == -1) return -1;
 
   signal(SIGTERM, on_term);
+  openlog("keystroke", LOG_CONS, LOG_USER);
 
   if (-1 == (ioctl(fd, EVIOCGRAB, 1))) return -1;
   unsigned long time;
@@ -83,9 +87,11 @@ int main(int argc, char *argv[]) {
       time  = event.time.tv_sec * 1000 + event.time.tv_usec / 1000;
       if (event.value == 1) {
         if (time - press_time[event.code] < MIN_MSEC) {
+          syslog(LOG_INFO, "suppress %d %d %d", time, event.value, event.code);
           continue;
         }
       }
+      syslog(LOG_INFO, "send %d %d %d", time, event.value, event.code);
       press_time[event.code] = time;
     }
     write(uinput, &event, sizeof(event));
